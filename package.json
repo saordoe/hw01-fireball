@@ -1,6 +1,6 @@
 {
   "scripts": {
-    "start": "webpack-dev-server --no-hot --live-reload",
+    "start": "SET NODE_OPTIONS=--openssl-legacy-provider && webpack-dev-server --no-hot --live-reload",
     "build": "webpack"
   },
   "devDependencies": {
