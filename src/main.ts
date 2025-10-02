@@ -1,6 +1,6 @@
-import { vec3, vec4 } from 'gl-matrix';
-const Stats = require('stats-js');
-import * as DAT from 'dat.gui';
+import { vec3, vec4, mat4} from 'gl-matrix';
+import Stats from 'stats.js';
+import * as dat from 'dat.gui';
 import Icosphere from './geometry/Icosphere';
 import Square from './geometry/Square';
 import OpenGLRenderer from './rendering/gl/OpenGLRenderer';
@@ -9,6 +9,7 @@ import { setGL } from './globals';
 import ShaderProgram, { Shader } from './rendering/gl/ShaderProgram';
 import Cube from './geometry/Cube';
 import Drawable from './rendering/gl/Drawable';
+import OBJ from './geometry/OBJObject';
 
 // Define an object with application parameters and button callbacks
 // This will be referred to by dat.GUI's functions that add GUI elements.
@@ -17,11 +18,16 @@ const controls = {
   tesselations: 5,
   'Load Scene': loadScene, // A function pointer, essentially
   shape: 'icosphere',
-  shader: 'custom',
-  color: [1.0, 0.0, 0.0],
+  shader: 'fireball',
+  color: [131, 24, 24],
+  flameIntensity: 6.0,
+  speed: 1.0,
 };
 
 let icosphere: Icosphere;
+let icosphere1: Icosphere;
+let icosphere2: Icosphere;
+
 let square: Square;
 let cube: Cube;
 
@@ -33,22 +39,38 @@ let currentShader: ShaderProgram;
 let palette: any = null;
 let lambert: ShaderProgram;
 let custom: ShaderProgram;
+
+let dragonStar: OBJ;
+let fireball: ShaderProgram; //icosphere
+let effect: ShaderProgram; // icosphere1
+let star: ShaderProgram; // icosphere2
+let bgShader: ShaderProgram;
 let gui: any;
 
-function loadScene() {
-  icosphere = new Icosphere(vec3.fromValues(0, 0, 0), 1, controls.tesselations);
+async function loadScene() {
+  icosphere = new Icosphere(vec3.fromValues(0, 0, 0), 1, controls.tesselations); // star
   icosphere.create();
-  square = new Square(vec3.fromValues(0, 0, 0));
+
+  icosphere1 = new Icosphere(vec3.fromValues(0, 0, 0), 1, controls.tesselations); // fireball
+  icosphere1.create();
+
+  icosphere2 = new Icosphere(vec3.fromValues(0, -0.5, 0), 1, controls.tesselations); // effect
+  icosphere2.create();
+
+  square = new Square(vec3.fromValues(0, 0, 0)); // for bg
   square.create();
 
-  cube = new Cube((vec3.fromValues(0, 0, 0)));
-  cube.create();
+  dragonStar = new OBJ(vec3.fromValues(0, 0, 0));
+  await dragonStar.loadFromOBJ("./dragon_star.obj");
+  dragonStar.create();
 
+  // cube = new Cube((vec3.fromValues(0, 0, 0)));
+  // cube.create();
 }
 
 function main() {
   // Initial display for framerate
-  const stats = Stats();
+  const stats = new Stats();
   stats.setMode(0);
   stats.domElement.style.position = 'absolute';
   stats.domElement.style.left = '0px';
@@ -79,6 +101,9 @@ function main() {
       default:
         currentShader = custom;
         break;
+      case 'fireball':
+        currentShader = fireball;
+        break;
     }
   }
 
@@ -94,15 +119,19 @@ function main() {
   }
 
   // Add controls to the gui
-  gui = new DAT.GUI();
+  gui = new dat.GUI();
   gui.add(controls, 'tesselations', 0, 8).step(1);
-  gui.add(controls, 'Load Scene');
+  // gui.add(controls, 'Load Scene');
+
+  gui.add(controls, 'flameIntensity', 6.0, 12.0).step(0.1).name('Flame Intensity');
+
+  gui.add(controls, 'speed', 1.0, 10.0).step(0.1).name("Speed!");
 
   gui.add(controls, 'shape', ['cube', 'icosphere', 'square']).onChange(() => {
     updateCurrShape();
   });
 
-  gui.add(controls, 'shader', ['lambert', 'custom']).onChange(() => {
+  gui.add(controls, 'shader', ['lambert', 'custom', 'fireball']).onChange(() => {
     updateCurrShader();
     toggleColorOn();
   });
@@ -123,8 +152,12 @@ function main() {
   const camera = new Camera(vec3.fromValues(0, 0, 5), vec3.fromValues(0, 0, 0));
 
   const renderer = new OpenGLRenderer(canvas);
-  renderer.setClearColor(0.2, 0.2, 0.2, 1);
+  // changed to navy bg
+  renderer.setClearColor(0.02, 0.05, 0.15, 1);
   gl.enable(gl.DEPTH_TEST);
+
+  gl.enable(gl.BLEND);
+  gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
 
   lambert = new ShaderProgram([
     new Shader(gl.VERTEX_SHADER, require('./shaders/lambert-vert.glsl')),
@@ -135,6 +168,26 @@ function main() {
   custom = new ShaderProgram([
     new Shader(gl.VERTEX_SHADER, require('./shaders/custom-vert.glsl')),
     new Shader(gl.FRAGMENT_SHADER, require('./shaders/custom-frag.glsl')),
+  ]);
+
+  fireball = new ShaderProgram([
+    new Shader(gl.VERTEX_SHADER, require('./shaders/fireball-vert.glsl')),
+    new Shader(gl.FRAGMENT_SHADER, require('./shaders/fireball-frag.glsl')),
+  ]);
+
+  effect = new ShaderProgram([
+    new Shader(gl.VERTEX_SHADER, require('./shaders/effect-vert.glsl')),
+    new Shader(gl.FRAGMENT_SHADER, require('./shaders/effect-frag.glsl')),
+  ]);
+
+  star = new ShaderProgram([
+    new Shader(gl.VERTEX_SHADER, require('./shaders/star-vert.glsl')),
+    new Shader(gl.FRAGMENT_SHADER, require('./shaders/star-frag.glsl')),
+  ]);
+
+  bgShader = new ShaderProgram([
+    new Shader(gl.VERTEX_SHADER, require('./shaders/bg-vert.glsl')),
+    new Shader(gl.FRAGMENT_SHADER, require('./shaders/bg-frag.glsl')),
   ]);
 
   updateCurrShape();
@@ -152,10 +205,21 @@ function main() {
       prevTesselations = controls.tesselations;
       icosphere = new Icosphere(vec3.fromValues(0, 0, 0), 1, prevTesselations);
       icosphere.create();
+      icosphere1 = new Icosphere(vec3.fromValues(0, 0, 0), 1, prevTesselations);
+      icosphere1.create();
+      icosphere2 = new Icosphere(vec3.fromValues(2.5, 0, 0), 1, prevTesselations);
+      icosphere2.create();
+      updateCurrShape();
     }
 
     const time = (Date.now() * 0.001) % 1000.0;
     custom.setTime(time);
+    fireball.setTime(time);
+    effect.setTime(time);
+    star.setTime(time);
+    bgShader.setTime(time);
+    fireball.setFlameIntensity(controls.flameIntensity);
+    fireball.setSpeed(controls.speed);
 
     let color = vec4.fromValues(
       controls.color[0] / 255.0,
@@ -164,7 +228,37 @@ function main() {
       1.0
     );
 
-    renderer.render(camera, currentShader, [currentShape], color);
+    // disabling stuff temporarily
+
+    //bg stuff
+    gl.disable(gl.DEPTH_TEST); //disable temp
+    bgShader.use();
+    bgShader.setModelMatrix(mat4.create());
+    bgShader.setViewProjMatrix(mat4.create());
+    bgShader.draw(square);
+    gl.enable(gl.DEPTH_TEST); // emable again
+
+    // scene
+    let tempColor = vec4.fromValues(0.0, 255.0, 255.0, 1.0);
+    // renderer.render(camera, star, [icosphere], tempColor);
+
+    renderer.render(camera, star, [dragonStar], tempColor);
+    renderer.render(camera, fireball, [icosphere1], tempColor);
+    renderer.render(camera, effect, [icosphere2], tempColor);
+
+    // renderer.render(camera, currentShader, [currentShape], color);
+
+    if (controls.shape !== 'icosphere') {
+      // This is the color that will actually be used by the lambert/custom shader
+      let activeColor = vec4.fromValues(
+        controls.color[0] / 255.0,
+        controls.color[1] / 255.0,
+        controls.color[2] / 255.0,
+        1.0
+      );
+      renderer.render(camera, currentShader, [currentShape], activeColor);
+    }
+
     stats.end();
 
     // Tell the browser to call `tick` again whenever it renders a new frame
