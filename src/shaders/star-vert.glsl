@@ -5,6 +5,8 @@ uniform mat4 u_ModelInvTr;
 uniform mat4 u_ViewProj;
 uniform float u_Time;
 
+uniform float u_Speed;
+
 in vec4 vs_Pos;
 in vec4 vs_Nor;
 in vec4 vs_Col;
@@ -33,7 +35,7 @@ void main() {
     deformedPos.y = sin(u_Time * 1.501)/3.0 + deformedPos.y;
 
     // rotate
-    float spin = u_Time * 5.0;
+    float spin = u_Time * u_Speed;
     mat2 rotate = mat2(cos(spin), -sin(spin), sin(spin), cos(spin));
     deformedPos.xz = rotate * deformedPos.xz;
     deformedPos *= vec3(0.8);

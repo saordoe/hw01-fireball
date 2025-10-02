@@ -15,13 +15,12 @@ import OBJ from './geometry/OBJObject';
 // This will be referred to by dat.GUI's functions that add GUI elements.
 
 const controls = {
-  tesselations: 5,
-  'Load Scene': loadScene, // A function pointer, essentially
   shape: 'icosphere',
   shader: 'fireball',
   color: [131, 24, 24],
   flameIntensity: 6.0,
-  speed: 1.0,
+  flameLength: 0.6,
+  speed: 3.0,
 };
 
 let icosphere: Icosphere;
@@ -30,8 +29,6 @@ let icosphere2: Icosphere;
 
 let square: Square;
 let cube: Cube;
-
-let prevTesselations: number = 5;
 
 // for nicer gui control
 let currentShape: Drawable;
@@ -48,13 +45,13 @@ let bgShader: ShaderProgram;
 let gui: any;
 
 async function loadScene() {
-  icosphere = new Icosphere(vec3.fromValues(0, 0, 0), 1, controls.tesselations); // star
+  icosphere = new Icosphere(vec3.fromValues(0, 0, 0), 1, 5); // star
   icosphere.create();
 
-  icosphere1 = new Icosphere(vec3.fromValues(0, 0, 0), 1, controls.tesselations); // fireball
+  icosphere1 = new Icosphere(vec3.fromValues(0, 0, 0), 1, 5); // fireball
   icosphere1.create();
 
-  icosphere2 = new Icosphere(vec3.fromValues(0, -0.5, 0), 1, controls.tesselations); // effect
+  icosphere2 = new Icosphere(vec3.fromValues(0, -0.5, 0), 1, 5); // effect
   icosphere2.create();
 
   square = new Square(vec3.fromValues(0, 0, 0)); // for bg
@@ -64,8 +61,6 @@ async function loadScene() {
   await dragonStar.loadFromOBJ("./dragon_star.obj");
   dragonStar.create();
 
-  // cube = new Cube((vec3.fromValues(0, 0, 0)));
-  // cube.create();
 }
 
 function main() {
@@ -76,36 +71,6 @@ function main() {
   stats.domElement.style.left = '0px';
   stats.domElement.style.top = '0px';
   document.body.appendChild(stats.domElement);
-
-  function updateCurrShape() {
-    switch (controls.shape) {
-      case 'cube':
-        currentShape = cube;
-        break;
-      case 'square':
-        currentShape = square;
-        break;
-      case 'icosphere':
-      default:
-        currentShape = icosphere;
-        break;
-    }
-  }
-
-  function updateCurrShader() {
-    switch (controls.shader) {
-      case 'lambert':
-        currentShader = lambert;
-        break;
-      case 'custom':
-      default:
-        currentShader = custom;
-        break;
-      case 'fireball':
-        currentShader = fireball;
-        break;
-    }
-  }
 
   function toggleColorOn() {
     if (palette) {
@@ -120,21 +85,10 @@ function main() {
 
   // Add controls to the gui
   gui = new dat.GUI();
-  gui.add(controls, 'tesselations', 0, 8).step(1);
-  // gui.add(controls, 'Load Scene');
 
   gui.add(controls, 'flameIntensity', 6.0, 12.0).step(0.1).name('Flame Intensity');
-
-  gui.add(controls, 'speed', 1.0, 10.0).step(0.1).name("Speed!");
-
-  gui.add(controls, 'shape', ['cube', 'icosphere', 'square']).onChange(() => {
-    updateCurrShape();
-  });
-
-  gui.add(controls, 'shader', ['lambert', 'custom', 'fireball']).onChange(() => {
-    updateCurrShader();
-    toggleColorOn();
-  });
+  gui.add(controls, 'flameLength', 0.6, 2.0).step(0.1).name('Flame Length');
+  gui.add(controls, 'speed', 1.0, 10.0).step(0.1).name("Star Speed!");
 
   // get canvas and webgl context
   const canvas = <HTMLCanvasElement>document.getElementById('canvas');
@@ -190,8 +144,6 @@ function main() {
     new Shader(gl.FRAGMENT_SHADER, require('./shaders/bg-frag.glsl')),
   ]);
 
-  updateCurrShape();
-  updateCurrShader();
   toggleColorOn();
 
   // This function will be called every frame
@@ -201,17 +153,6 @@ function main() {
     gl.viewport(0, 0, window.innerWidth, window.innerHeight);
     renderer.clear();
 
-    if (controls.tesselations != prevTesselations) {
-      prevTesselations = controls.tesselations;
-      icosphere = new Icosphere(vec3.fromValues(0, 0, 0), 1, prevTesselations);
-      icosphere.create();
-      icosphere1 = new Icosphere(vec3.fromValues(0, 0, 0), 1, prevTesselations);
-      icosphere1.create();
-      icosphere2 = new Icosphere(vec3.fromValues(2.5, 0, 0), 1, prevTesselations);
-      icosphere2.create();
-      updateCurrShape();
-    }
-
     const time = (Date.now() * 0.001) % 1000.0;
     custom.setTime(time);
     fireball.setTime(time);
@@ -219,7 +160,8 @@ function main() {
     star.setTime(time);
     bgShader.setTime(time);
     fireball.setFlameIntensity(controls.flameIntensity);
-    fireball.setSpeed(controls.speed);
+    fireball.setFlameLength(controls.flameLength);
+    star.setSpeed(controls.speed);
 
     let color = vec4.fromValues(
       controls.color[0] / 255.0,

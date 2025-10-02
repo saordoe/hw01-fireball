@@ -5,8 +5,7 @@ uniform mat4 u_ModelInvTr;
 uniform mat4 u_ViewProj;
 uniform float u_Time;
 uniform float u_FlameIntensity;
-
-uniform float u_Speed;
+uniform float u_FlameLength;
 
 in vec4 vs_Pos;
 in vec4 vs_Nor;
@@ -68,7 +67,7 @@ void main() {
     float flatten = 0.3;
     pos.y *= flatten;
    
-    float caveDepth = 0.6;
+    float caveDepth = u_FlameLength;
     float caveSharpness = 2.5;
    
     float concaveCurve = pow(radDist, caveSharpness) * caveDepth;

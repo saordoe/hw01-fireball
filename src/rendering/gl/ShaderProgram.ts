@@ -31,6 +31,7 @@ class ShaderProgram {
   unifColor: WebGLUniformLocation;
   unifTime: WebGLUniformLocation;
   unifFlameIntensity: WebGLUniformLocation;
+  unifFlameLength: WebGLUniformLocation;
   unifSpeed: WebGLUniformLocation;
 
   constructor(shaders: Array<Shader>) {
@@ -53,6 +54,7 @@ class ShaderProgram {
     this.unifColor = gl.getUniformLocation(this.prog, "u_Color");
     this.unifTime = gl.getUniformLocation(this.prog, "u_Time");
     this.unifFlameIntensity = gl.getUniformLocation(this.prog, "u_FlameIntensity");
+    this.unifFlameLength = gl.getUniformLocation(this.prog, "u_FlameLength");
     this.unifSpeed = gl.getUniformLocation(this.prog, "u_Speed");
   }
 
@@ -67,6 +69,13 @@ class ShaderProgram {
     this.use();
     if (this.unifFlameIntensity !== -1) {
       gl.uniform1f(this.unifFlameIntensity, intensity);
+    }
+  }
+
+  setFlameLength(length: number) {
+    this.use();
+    if (this.unifFlameLength !== -1) {
+      gl.uniform1f(this.unifFlameLength, length);
     }
   }
 
