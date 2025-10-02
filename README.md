@@ -1,5 +1,6 @@
 # ⭐ WebGL Star Fragment 💫
-Click here for a link to the interactive demo: https://saordoe.github.io/webgl-fireball/ </br>
+Click here for a link to the interactive demo: [https://saordoe.github.io/webgl-fireball/](https://saordoe.github.io/webgl-fireball/?v1) </br>
+
 ![Adobe Express - Screen Recording 2025-10-02 015822](https://github.com/user-attachments/assets/db692bc3-506f-4627-ba1b-8187d6338134)
 
 ## Project Inspiration
