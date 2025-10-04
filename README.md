@@ -1,10 +1,11 @@
-# ⭐ WebGL Star Fragment 💫
+# WebGL Star Fragment 💫
 Click here for a link to the interactive demo: [https://saordoe.github.io/webgl-fireball/](https://saordoe.github.io/webgl-fireball/?v1) </br>
 
 ![Adobe Express - Screen Recording 2025-10-02 015822](https://github.com/user-attachments/assets/db692bc3-506f-4627-ba1b-8187d6338134)
 
 ## Project Inspiration
 Breath of the Wild is one of my favorite games of all time. While the original goal was to implement a fireball, I shifted the design to a falling star fragment. Here is a picture of the star fragment from the game for context: </br>
+
 ![Star_Fragment_The_Legend_of_Zelda_Tears_of_the_Kingdom_TotK](https://github.com/user-attachments/assets/92758659-b2e5-4d40-810d-d25ba4dfa6cd)
 
 ## Extra Spice!
